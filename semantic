@@ -1,0 +1,26 @@
+import numpy as np
+from sentence_transformers import SentenceTransformer
+
+MODEL_NAME = 'all-MiniLM-L6-v2'   # small and fast; downloaded automatically on first use
+_encoder = None
+
+
+def get_encoder():
+    global _encoder
+    if _encoder is None:
+        _encoder = SentenceTransformer(MODEL_NAME)
+    return _encoder
+
+
+def encode(texts, show_progress=False):
+    """Texts -> normalized sentence embeddings, shape (n, 384)."""
+    return get_encoder().encode(list(texts), batch_size=128,
+                                normalize_embeddings=True,
+                                show_progress_bar=show_progress)
+
+
+def pair_features(u, v):
+    """Embeddings of question 1 (u) and question 2 (v) -> (n, 769) features:
+    cosine similarity, |u - v| and u * v."""
+    cos = np.sum(u * v, axis=1, keepdims=True)
+    return np.hstack([cos, np.abs(u - v), u * v]).astype(np.float32)
